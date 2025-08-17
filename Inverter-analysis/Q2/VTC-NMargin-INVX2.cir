@@ -1,0 +1,38 @@
+* Double strength Inverter -ketan
+
+.lib /usr/local/share/pdk/sky130A/libs.tech/ngspice/sky130.lib.spice tt
+
+.param asn = 0.42*2*0.15        ; parameter of nmos
+.param pdn = 2*(0.42+2*0.15)    
+.param wp = 0.84 + 0.42         ; parameter of pmos
+.param asp = wp*2*0.15
+.param pdp = 2*(wp+ 2*0.15)
+.param wp2 = 2*wp              ; double drive strength
+.param pdn2 = 2*((2*0.42)+(2*0.15))
+.param pdp2 = 2*((wp2) + (2*0.15))
+
+
+*the voltage sources:
+Vdd vdd gnd DC 1.8
+V1 in gnd DC 1.8
+
+XINVX2 in vdd gnd out not2      ; Inverter of double drive strength
+XINX1 out vdd gnd out1 not1     ; Inverter of single drive strength
+
+.subckt not1 a vdd vss z
+xm01 z a vdd vdd sky130_fd_pr__pfet_01v8 l=0.15 w={wp}  as={asp} ad={asp}   ps={pdp} pd={pdp}
+xm02 z a vss vss sky130_fd_pr__nfet_01v8 l=0.15 w=0.42 as={asn} ad={asn} ps={pdn} pd={pdn}
+.ends
+.subckt not2 a vdd vss z        ; subcircuit for inverter of double drive strength
+*xm01 z a vdd vdd sky130_fd_pr__pfet_01v8 l=0.15 w={wp2} as=2*{asp} ad=2*{asp} ps={pdp2} pd={pdp2}      ; this format gives error for double strength in ngspice 
+*xm02 z a vss vss sky130_fd_pr__nfet_01v8 l=0.15 w=2*0.42 as=2*{asn} ad=2*{asn} ps={pdn2} pd={pdn2} 
+xm01 z a vdd vdd sky130_fd_pr__pfet_01v8 l=0.15 w=2.52 as=0.756 ad=0.756 ps=5.64 pd=5.64                ; This values are hard coded as subsitute of above format
+xm02 z a vss vss sky130_fd_pr__nfet_01v8 l=0.15 w=0.84 as=0.252 ad=0.252 ps=2.28 pd=2.28
+.ends
+
+.control
+run
+dc V1 0 1.8 0.01
+plot v(out) v(in)       ; Vm can be find with it at intersection of two curves
+plot -deriv(v(out))     ; Can be used to find Vih, Vil by checking input voltage at gain = 1 and corresponding Vol, Voh using VTC
+.endc

@@ -1,0 +1,27 @@
+* simple Inverter -ketan
+.lib /usr/local/share/pdk/sky130A/libs.tech/ngspice/sky130.lib.spice tt
+
+.param asn = 0.42*2 *0.15
+.param pdn = 2*(0.42 + 2*0.15 )
+.param wp = 0.84 + 0.42
+.param asp = wp*2*0.15
+.param pdp = 2*(wp + 2*0.15)
+
+*the voltage sources:
+Vdd vdd gnd DC 1.8
+V1 in gnd DC 1.8
+
+Xnot1 in vdd gnd out not1
+Xnot2 out vdd gnd out1 not1
+
+.subckt not1 a vdd vss z
+xm01 z a vdd vdd sky130_fd_pr__pfet_01v8 l=0.15 w={wp}  as={asp} ad={asp}   ps={pdp} pd={pdp}
+xm02 z a vss vss sky130_fd_pr__nfet_01v8 l=0.15 w=0.42 as={asn} ad={asn} ps={pdn} pd={pdn}
+.ends
+
+.control
+run
+dc V1 0 1.8 0.01
+plot v(out) v(in)       ; Vm can be find with it at intersection of two curves
+plot -deriv(v(out))     ; Can be used to find Vih, Vil by checking input voltage at gain = 1 and corresponding Vol, Voh using VTC
+.endc
